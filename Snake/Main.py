@@ -52,7 +52,7 @@ class Cube(object):
         self.surface = game.screen
         self.color = color
         if position is None:
-            position = [randint(0, game.cor_width/60), randint(0, game.cor_height/60)]
+            position = [randint(0, game.cor_width / 60) * 60, randint(0, game.cor_height / 60) * 60]
         self.position = position
         self.rect = pygame.Rect(position[0], position[1], 60, 60)
 
@@ -100,19 +100,21 @@ def quitCheck(player: Player):
 
 
 def start():
+    """This is the class that actually runs the game lol"""
     game = Game(WIDTH, HEIGHT)
     game.setFPS(10)
     player1 = Player(game, (60, 60))
     game.screen.fill((0, 0, 0))
     done = False
+    food = Cube(game)
     while not done:
         done = quitCheck(player1)
         player1.move()
         player1.drawCube()
+        food.drawCube()
         pygame.display.flip()
         game.screen.fill((0, 0, 0))
         game.tick()
 
 
 start()
-
