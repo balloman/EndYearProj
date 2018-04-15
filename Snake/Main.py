@@ -1,7 +1,8 @@
 """This is a much neater and more modular version of test.py with classes"""
 
-import pygame
 from random import randint
+
+import pygame
 
 HEIGHT = 540
 WIDTH = 960
@@ -35,6 +36,7 @@ class Game(object):
         self.cor_width = width - 60
         self.cor_height = height - 60
         self.fps = fps
+        self.frameCount = 0
 
     def setFPS(self, i_fps):
         self.fps = i_fps
@@ -43,6 +45,7 @@ class Game(object):
         self.screen = pygame.display.set_mode((width, height), mode)
 
     def tick(self):
+        self.frameCount += 1
         self.clock.tick(self.fps)
 
 
@@ -60,8 +63,9 @@ class Cube(object):
         pygame.draw.rect(self.surface, self.color, self.rect)
 
 
+
 class Player(Cube):
-    def __init__(self, game: Game, size: tuple, speed=60):
+    def __init__(self, game: Game, size: list, speed=60):
         self.x = 0
         self.y = game.cor_height
         self.position = [self.x, self.y]
@@ -69,6 +73,8 @@ class Player(Cube):
         super().__init__(game, self.color, self.position)
         self.size = size
         self.speed = speed
+        self.eaten = 0
+        self.tails = []
 
     def move(self):
         direction = control(60)
@@ -81,9 +87,22 @@ class Player(Cube):
         else:
             self.y += direction[1]
         self.rect = pygame.Rect(self.x, self.y, self.size[0], self.size[1])
+        self.position = [self.x, self.y]
 
     def eat(self):
-        pass
+        self.eaten += 1
+        self.tails.append(Tail(self.game, [self.x + 60, self.y], self.eaten))
+        self.tails[self.eaten - 1].drawCube()
+
+
+class Tail(Cube):
+    def __init__(self, game: Game, position, index: int):
+        super().__init__(game, position=position, color=(0, 0, 255))
+        self.index = index
+
+    def follow(self, position):
+        self.rect = pygame.Rect(position[0], position[1], 60, 60)
+        self.drawCube()
 
 
 def quitCheck(player: Player):
@@ -99,19 +118,38 @@ def quitCheck(player: Player):
     return False
 
 
+def isCollision(player: Player, cube: Cube):
+    if [player.x, player.y] == cube.position:
+        return True
+
+
 def start():
     """This is the class that actually runs the game lol"""
     game = Game(WIDTH, HEIGHT)
-    game.setFPS(10)
-    player1 = Player(game, (60, 60))
+    game.setFPS(7)
+    player1 = Player(game, [60, 60])
     game.screen.fill((0, 0, 0))
     done = False
-    food = Cube(game)
+    isFood = False
+    places = []
+    food = None
     while not done:
         done = quitCheck(player1)
         player1.move()
         player1.drawCube()
-        food.drawCube()
+        for i in player1.tails:
+            i.follow(places[game.frameCount - i.index])
+        if isFood:
+            if isCollision(player1, food):
+                player1.eat()
+                isFood = False
+            else:
+                food.drawCube()
+        else:
+            food = Cube(game)
+            isFood = True
+
+        places.append(player1.position)
         pygame.display.flip()
         game.screen.fill((0, 0, 0))
         game.tick()
