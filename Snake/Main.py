@@ -4,24 +4,28 @@ from random import randint
 
 import pygame
 
-HEIGHT = 540
-WIDTH = 960
+HEIGHT = 1080
+WIDTH = 1920
 
 
 def control(speed, direction=[0, 0]):
     pressed = pygame.key.get_pressed()
     if pressed[pygame.K_UP]:
-        direction[1] = -speed
-        direction[0] = 0
+        if direction[1] != speed:
+            direction[1] = -speed
+            direction[0] = 0
     if pressed[pygame.K_DOWN]:
-        direction[1] = speed
-        direction[0] = 0
+        if direction[1] != -speed:
+            direction[1] = speed
+            direction[0] = 0
     if pressed[pygame.K_LEFT]:
-        direction[0] = -speed
-        direction[1] = 0
+        if direction[0] != speed:
+            direction[0] = -speed
+            direction[1] = 0
     if pressed[pygame.K_RIGHT]:
-        direction[0] = speed
-        direction[1] = 0
+        if direction[0] != -speed:
+            direction[0] = speed
+            direction[1] = 0
     return direction
 
 
@@ -54,14 +58,14 @@ class Cube(object):
         self.game = game
         self.surface = game.screen
         self.color = color
+        randNumbers = [randint(0, game.cor_width / 60) * 60, randint(0, game.cor_height / 60) * 60]
         if position is None:
-            position = [randint(0, game.cor_width / 60) * 60, randint(0, game.cor_height / 60) * 60]
+            position = randNumbers
         self.position = position
         self.rect = pygame.Rect(position[0], position[1], 60, 60)
 
     def drawCube(self):
         pygame.draw.rect(self.surface, self.color, self.rect)
-
 
 
 class Player(Cube):
@@ -70,7 +74,7 @@ class Player(Cube):
         self.y = game.cor_height
         self.position = [self.x, self.y]
         self.color = (0, 0, 255)
-        super().__init__(game, self.color, self.position)
+        super().__init__(game, color=self.color, position=self.position)
         self.size = size
         self.speed = speed
         self.eaten = 0
@@ -78,26 +82,19 @@ class Player(Cube):
 
     def move(self):
         direction = control(60)
-        if self.x <= 0 and direction[0] == -self.speed:
-            self.x += 0
-        else:
-            self.x += direction[0]
-        if self.y <= 0 and direction[1] == -self.speed:
-            self.y += 0
-        else:
-            self.y += direction[1]
+        self.x += direction[0]
+        self.y += direction[1]
         self.rect = pygame.Rect(self.x, self.y, self.size[0], self.size[1])
         self.position = [self.x, self.y]
 
     def eat(self):
         self.eaten += 1
-        self.tails.append(Tail(self.game, [self.x + 60, self.y], self.eaten))
-        self.tails[self.eaten - 1].drawCube()
+        self.tails.append(Tail(self.game, self.eaten))
 
 
 class Tail(Cube):
-    def __init__(self, game: Game, position, index: int):
-        super().__init__(game, position=position, color=(0, 0, 255))
+    def __init__(self, game: Game, index: int):
+        super().__init__(game, color=(0, 0, 255))
         self.index = index
 
     def follow(self, position):
@@ -111,10 +108,15 @@ def quitCheck(player: Player):
             return True
         else:
             return False
-    if player.x > player.game.cor_width:
+    if player.x > player.game.cor_width or player.x < 0:
         return True
-    if player.y > player.game.cor_height:
+    if player.y > player.game.cor_height or player.y < 0:
         return True
+    index = 0
+    for i in player.tails:
+        if index != 0 and player.position == i.position:
+            return True
+        index += 1
     return False
 
 
@@ -125,8 +127,8 @@ def isCollision(player: Player, cube: Cube):
 
 def start():
     """This is the class that actually runs the game lol"""
-    game = Game(WIDTH, HEIGHT)
-    game.setFPS(7)
+    game = Game(WIDTH, HEIGHT, pygame.FULLSCREEN)
+    game.setFPS(10)
     player1 = Player(game, [60, 60])
     game.screen.fill((0, 0, 0))
     done = False
