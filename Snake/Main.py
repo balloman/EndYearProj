@@ -4,8 +4,8 @@ from random import randint
 
 import pygame
 
-HEIGHT = 1080
-WIDTH = 1920
+HEIGHT = int(1080 / 2)
+WIDTH = int(1920 / 2)
 
 
 def control(speed, direction=[0, 0]):
@@ -39,8 +39,11 @@ class Game(object):
             self.screen = pygame.display.set_mode((width, height), mode)
         self.cor_width = width - 60
         self.cor_height = height - 60
+        self.width = width
+        self.height = height
         self.fps = fps
         self.frameCount = 0
+        pygame.init()
 
     def setFPS(self, i_fps):
         self.fps = i_fps
@@ -102,6 +105,36 @@ class Tail(Cube):
         self.drawCube()
 
 
+class Text(object):
+    def __init__(self, game: Game, size=None, font=None):
+        if size is None:
+            self.size = 20
+        else:
+            self.size = size
+        if font is None:
+            fontpath = pygame.font.get_default_font()
+            self.font = pygame.font.match_font(fontpath)
+        else:
+            self.font = pygame.font.match_font(font)
+        self.object = pygame.font.Font(self.font, self.size)
+        self.surface = None
+        self.game = game
+
+    def writeText(self, text, position=None, antialias=True, color=(0, 255, 0)):
+        if position is None:
+            position = [0, 0]
+        self.surface = self.object.render(text, antialias, color)
+        self.game.screen.blit(self.surface, position)
+
+    def render(self, text, antialias=True, color=(0, 255, 0)):
+        self.surface = self.object.render(text, antialias, color)
+
+    def draw(self, position=None):
+        if position is None:
+            position = [0, 0]
+        self.game.screen.blit(self.surface, position)
+
+
 def quitCheck(player: Player):
     for event in pygame.event.get():
         if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
@@ -115,7 +148,7 @@ def quitCheck(player: Player):
     index = 0
     for i in player.tails:
         if index != 0 and player.position == i.position:
-            return True
+            print(str(i.position) + str(player.position))
         index += 1
     return False
 
@@ -127,9 +160,10 @@ def isCollision(player: Player, cube: Cube):
 
 def start():
     """This is the class that actually runs the game lol"""
-    game = Game(WIDTH, HEIGHT, pygame.FULLSCREEN)
-    game.setFPS(10)
+    game = Game(WIDTH, HEIGHT)
+    game.setFPS(8)
     player1 = Player(game, [60, 60])
+    text = Text(game, 20)
     game.screen.fill((0, 0, 0))
     done = False
     isFood = False
@@ -150,7 +184,7 @@ def start():
         else:
             food = Cube(game)
             isFood = True
-
+        text.writeText(("Score: " + str(player1.eaten)))
         places.append(player1.position)
         pygame.display.flip()
         game.screen.fill((0, 0, 0))
